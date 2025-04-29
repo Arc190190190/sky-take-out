@@ -8,6 +8,7 @@ import com.sky.entity.Dish;
 import com.sky.mapper.DishMapper;
 import com.sky.result.PageResult;
 import com.sky.service.DishService;
+import com.sky.vo.DishVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,5 +56,15 @@ public class DishServiceImpl implements DishService {
                 id(id).
                 build();
         dishMapper.update(dish);
+    }
+
+    /**
+     * 根据id查询菜品
+     *
+     * @param id
+     * @return
+     */
+    public DishVO slectById(Long id) {
+        return dishMapper.selectById(id);
     }
 }
