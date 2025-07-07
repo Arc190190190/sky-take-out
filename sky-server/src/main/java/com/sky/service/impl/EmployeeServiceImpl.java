@@ -156,7 +156,6 @@ public class EmployeeServiceImpl implements EmployeeService {
      */
     public void editPassword(PasswordEditDTO passwordEditDTO) {
         System.out.print(passwordEditDTO.getEmpId());
-        //TODO 傻逼前端疑似没传id
         Employee employee = employeeMapper.getById(BaseContext.getCurrentId());
         String oldPwd = DigestUtils.md5DigestAsHex(passwordEditDTO.getOldPassword().getBytes());
         //判断旧密码是否正确

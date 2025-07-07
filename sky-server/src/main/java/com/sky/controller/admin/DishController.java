@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @author Arc
  * @version v1.0
@@ -71,14 +74,35 @@ public class DishController {
      * @param id
      * @return
      */
-    @GetMapping("/{id}")
-    @ApiOperation(value = "根据id查询菜品")
-    public Result<DishVO> getById(@PathVariable Long id) {
-        log.info("根据id查询菜品：{}", id);
-        DishVO dish = dishService.slectById(id);
-        return Result.success(dish);
+//    @GetMapping("/{id}")
+//    @ApiOperation(value = "根据id查询菜品")
+//    public Result<DishVO> getById(@PathVariable Long id) {
+//        log.info("根据id查询菜品：{}", id);
+//        DishVO dish = dishService.slectById(id);
+//        return Result.success(dish);
+//    }
+
+    /**
+     * 批量删除菜品
+     * @return
+     */
+    @DeleteMapping
+    @ApiOperation(value = "批量删除菜品")
+    public Result batchDelete(@RequestParam List<Long> ids) {
+        log.info("批量删除菜品：{}", ids);
+        dishService.batchDelete(ids);
+        return Result.success();
     }
 
-
-
+    /**
+     * 根据分类id查询菜品
+     * @param categoryId
+     * @return
+     */
+    @GetMapping("/list")
+    @ApiOperation("根据分类id查询菜品")
+    public Result<List<Dish>> list(Long categoryId){
+        List<Dish> list = dishService.list(categoryId);
+        return Result.success(list);
+    }
 }
