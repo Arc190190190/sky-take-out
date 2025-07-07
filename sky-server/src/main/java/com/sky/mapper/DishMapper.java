@@ -73,4 +73,10 @@ public interface DishMapper {
      * @return
      */
     List<Dish> list(Dish dish);
+
+    /**
+     * 批量删除菜品
+     * @param dishIds
+     */
+    void deleteByIds(List<Long> dishIds);
 }

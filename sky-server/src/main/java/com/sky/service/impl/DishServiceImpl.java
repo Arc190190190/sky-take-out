@@ -8,7 +8,9 @@ import com.sky.constant.StatusConstant;
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
+import com.sky.entity.DishFlavor;
 import com.sky.exception.DeletionNotAllowedException;
+import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealDishMapper;
 import com.sky.mapper.SetmealMapper;
@@ -33,6 +35,8 @@ public class DishServiceImpl implements DishService {
     private DishMapper dishMapper;
     @Autowired
     private SetmealDishMapper setmealDishMapper;
+    @Autowired
+    private DishFlavorMapper dishFlavorMapper;
 
     /**
      * 新增菜品
@@ -100,12 +104,11 @@ public class DishServiceImpl implements DishService {
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
 
-        for (Long id : DishIds) {
-            //删除菜品表数据
-            dishMapper.deleteById(id);
-            //删除菜品和口味的关联数据
-            setmealDishMapper.deleteByDishId(id);
-        }
+        //删除菜品
+        dishMapper.deleteByIds(DishIds);
+        //删除菜品关联口味
+        dishFlavorMapper.deleteByDishIds(DishIds);
+
     }
 
     /**

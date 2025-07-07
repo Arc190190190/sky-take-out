@@ -23,6 +23,13 @@
         </where>
     </update>
 
+    <delete id="deleteByIds">
+        delete from dish where id in
+        <foreach collection="dishIds" item="dishId" separator="," open="(" close=")">
+            #{dishId}
+        </foreach>
+    </delete>
+
     <select id="pageQuery" resultType="com.sky.entity.Dish">
         select * from dish
         <where>
