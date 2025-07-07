@@ -19,6 +19,7 @@ import com.sky.service.DishService;
 import com.sky.vo.DishVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,14 +40,26 @@ public class DishServiceImpl implements DishService {
     private DishFlavorMapper dishFlavorMapper;
 
     /**
-     * 新增菜品
+     * 新增菜品和口味
      *
      * @param dishDTO
      */
-    public void save(DishDTO dishDTO) {
+    @Transactional
+    public void saveWithFlavors(DishDTO dishDTO) {
         Dish dish = new Dish();
         BeanUtils.copyProperties(dishDTO, dish);
+        //插入菜品数据
         dishMapper.insert(dish);
+        //获取菜品id
+        Long dishId = dish.getId();
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        //如果 flavors不为空，则批量插入
+        if (flavors != null && flavors.size() > 0){
+            //给每个口味设置菜品id
+           flavors.forEach(dishFlavor -> dishFlavor.setDishId(dishId));
+            //批量插入口味
+            dishFlavorMapper.insertBatch(flavors);
+        }
     }
 
     /**
@@ -73,15 +86,24 @@ public class DishServiceImpl implements DishService {
         dishMapper.update(dish);
     }
 
-//    /**
-//     * 根据id查询菜品
-//     *
-//     * @param id
-//     * @return
-//     */
-//    public DishVO slectById(Long id) {
-//
-//    }
+    /**
+     * 根据id查询菜品
+     *
+     * @param id
+     * @return
+     */
+    @Transactional
+    public DishVO selectById(Long id) {
+        DishVO dishVO = new DishVO();
+        //根据id查询菜品
+        Dish dish = dishMapper.getById(id);
+        //将菜品信息拷贝到dishVO中
+        BeanUtils.copyProperties(dish, dishVO);
+        //根据id查询菜品口味
+        List<DishFlavor> dishFlavors = dishFlavorMapper.getDishFlavorsByDishId(id);
+        dishVO.setFlavors(dishFlavors);
+        return dishVO;
+    }
 
     /**
      * 批量删除菜品

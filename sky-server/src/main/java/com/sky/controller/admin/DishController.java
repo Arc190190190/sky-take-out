@@ -30,15 +30,15 @@ public class DishController {
     private DishService dishService;
 
     /**
-     * 新增菜品
+     * 新增菜品和口味
      * @param dishDTO
      * @return
      */
     @PostMapping
-    @ApiOperation(value = "新增菜品")
+    @ApiOperation(value = "新增菜品和口味")
     public Result<String> save(@RequestBody DishDTO dishDTO){
         log.info("新增菜品：{}",dishDTO);
-        dishService.save(dishDTO);
+        dishService.saveWithFlavors(dishDTO);
         return Result.success();
     }
 
@@ -74,13 +74,13 @@ public class DishController {
      * @param id
      * @return
      */
-//    @GetMapping("/{id}")
-//    @ApiOperation(value = "根据id查询菜品")
-//    public Result<DishVO> getById(@PathVariable Long id) {
-//        log.info("根据id查询菜品：{}", id);
-//        DishVO dish = dishService.slectById(id);
-//        return Result.success(dish);
-//    }
+    @GetMapping("/{id}")
+    @ApiOperation(value = "根据id查询菜品")
+    public Result<DishVO> getById(@PathVariable Long id) {
+        log.info("根据id查询菜品：{}", id);
+        DishVO dish = dishService.selectById(id);
+        return Result.success(dish);
+    }
 
     /**
      * 批量删除菜品

@@ -14,10 +14,10 @@ import java.util.List;
  */
 public interface DishService {
     /**
-     * 新增菜品
+     * 新增菜品和口味
      * @param dishDTO
      */
-    void save(DishDTO dishDTO);
+    void saveWithFlavors(DishDTO dishDTO);
 
     /**
      * 分页查询菜品
@@ -39,7 +39,7 @@ public interface DishService {
      * @param id
      * @return
      */
-//    DishVO slectById(Long id);
+    DishVO selectById(Long id);
 
     /**
      * 批量删除菜品
