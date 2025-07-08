@@ -53,4 +53,10 @@ public interface DishService {
      * @return
      */
     List<Dish> list(Long categoryId);
+
+    /**
+     * 修改菜品与口味
+     * @param dishDTO
+     */
+    void updateDishWithFlavors(DishDTO dishDTO);
 }

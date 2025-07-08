@@ -105,4 +105,18 @@ public class DishController {
         List<Dish> list = dishService.list(categoryId);
         return Result.success(list);
     }
+
+    /**
+     * 修改菜品
+     * @param dishDTO
+     * @return
+     */
+    @PutMapping
+    @ApiOperation(value = "修改菜品")
+    public Result updateDishWithFlavors(@RequestBody DishDTO dishDTO) {
+        log.info("修改菜品：{}", dishDTO);
+        dishService.updateDishWithFlavors(dishDTO);
+        return Result.success();
+    }
+
 }
