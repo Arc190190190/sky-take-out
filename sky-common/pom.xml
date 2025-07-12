@@ -49,5 +49,11 @@
             <groupId>com.github.wechatpay-apiv3</groupId>
             <artifactId>wechatpay-apache-httpclient</artifactId>
         </dependency>
+        <!-- Hutool 工具库（核心依赖，提供Snowflake实现） -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.8.16</version> <!-- 使用最新版本 -->
+        </dependency>
     </dependencies>
 </project>
