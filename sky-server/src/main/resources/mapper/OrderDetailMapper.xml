@@ -5,7 +5,7 @@
 <mapper namespace="com.sky.mapper.OrderDetailMapper">
 
     <insert id="insert">
-        insert into order_detail (order_id, dish_id, setmeal_id, dish_flavor, number, amount)
-        values (#{orderId}, #{dishId}, #{setmealId}, #{dishFlavor}, #{number}, #{amount})
+        insert into order_detail (order_id, dish_id, setmeal_id, dish_flavor, number, amount, image,name)
+        values (#{orderId}, #{dishId}, #{setmealId}, #{dishFlavor}, #{number}, #{amount}, #{image},#{name})
     </insert>
 </mapper>

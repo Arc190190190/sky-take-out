@@ -27,4 +27,6 @@ public class MessageConstant {
     public static final String ALREADY_EXISTS = "该字段已存在";
     public static final String FIELD_REQUIRED = "字段不能为空";
     public static final String FOREIGN_KEY_FAILED = "外键约束失败";
+    public static final String DISH_OFF_SALE = "当前菜品不在售";
+    public static final String SETMEAL_OFF_SALE = "当前套餐不在售";
 }
