@@ -62,4 +62,19 @@ public interface OrderMapper {
      */
     @Select("select * from orders where id = #{id}")
     Orders getById(Long id);
+
+    /**
+     * 条件搜索订单
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    Page<Orders> conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO);
+
+    /**
+     * 各个状态的订单数量统计
+     * @param status
+     * @return
+     */
+    @Select("select count(id) from orders where status = #{status}")
+    Integer getStatusCount(Integer status);
 }
