@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author Arc
@@ -77,4 +78,11 @@ public interface OrderMapper {
      */
     @Select("select count(id) from orders where status = #{status}")
     Integer getStatusCount(Integer status);
+
+    /**
+     * 查询超时订单
+     * @return
+     */
+    @Select("select * from orders where status = #{status} and order_time < #{time}")
+    List<Orders> getByStatusAndOrderTime(Integer status,LocalDateTime time);
 }
