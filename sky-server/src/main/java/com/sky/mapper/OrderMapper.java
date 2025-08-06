@@ -12,6 +12,7 @@ import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Arc
@@ -93,4 +94,11 @@ public interface OrderMapper {
      */
     @Select("select * from orders where number = #{orderNumber}")
     Orders getByOrderNumber(String orderNumber);
+
+    /**
+     * 根据动态条件查询订单数据
+     * @param map
+     * @return
+     */
+    Double sumByMap(Map map);
 }
