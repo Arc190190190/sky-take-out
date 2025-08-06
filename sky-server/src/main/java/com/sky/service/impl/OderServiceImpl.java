@@ -27,6 +27,8 @@ import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 
+import com.sky.websoket.WebSocketServer;
+import io.swagger.util.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
@@ -65,14 +67,18 @@ public class OderServiceImpl implements OrderService {
     private DishMapper dishMapper;
     @Autowired
     private SetmealMapper setmealMapper;
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     @Value("${sky.shop.address}")
     private String shopAddress;
 
     @Value("${sky.baidu.ak}")
     private String ak;
+
     /**
      * 订单提交
+     *
      * @param ordersSubmitDTO
      * @return
      */
@@ -90,7 +96,7 @@ public class OderServiceImpl implements OrderService {
 
         //获取购物车信息
         List<ShoppingCart> shoppingCartList = shoppingCartMapper.list(userId);
-        if (shoppingCartList == null || shoppingCartList.size() == 0){
+        if (shoppingCartList == null || shoppingCartList.size() == 0) {
             throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_IS_NULL);
         }
 
@@ -173,11 +179,23 @@ public class OderServiceImpl implements OrderService {
 
         log.info("调用updateStatus, 用于替换微信支付更新数据库状态的问题");
         orderMapper.updateStatus(OrderStatus, OrderPaidStatus, check_out_time, orderNumber);
+        Orders orders = orderMapper.getByOrderNumber(orderNumber);
+        //使用websoket推送消息给客户端
+        Map map = new HashMap();
+        map.put("type", 1);
+        map.put("orderId", orders.getId());
+        map.put("content", "订单号：" + orderNumber);
+        String json = JSON.toJSONString(map);
+        //推送消息给客户端
+
+        webSocketServer.sendToAllClient(json);
+
         return vo;
     }
 
     /**
      * 支付成功，修改订单状态
+     * TODO阉割掉了微信支付，该方法暂不使用
      *
      * @param outTradeNo
      */
@@ -199,6 +217,7 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 分页查询订单
+     *
      * @param ordersPageQueryDTO
      * @return
      */
@@ -212,7 +231,7 @@ public class OderServiceImpl implements OrderService {
         List<OrderVO> result = orderVOS.getResult();
 
         //封装订单详情信息到DTO
-        for (OrderVO orderVO: result) {
+        for (OrderVO orderVO : result) {
             List<OrderDetail> orderDetail = orderDetailMapper.getByOrderId(orderVO.getId());
             orderVO.setOrderDetailList(orderDetail);
         }
@@ -222,6 +241,7 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 订单详情
+     *
      * @param id
      * @return
      */
@@ -238,12 +258,13 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 取消订单
+     *
      * @param id
      */
     public void cancel(Long id) {
         Orders ordersDB = orderMapper.getById(id);
         //判断订单状态,订单状态为3或者4不能取消
-        if (ordersDB == null || ordersDB.getStatus() > 2){
+        if (ordersDB == null || ordersDB.getStatus() > 2) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
         //如果已经支付待接单，则需要退款
@@ -251,7 +272,7 @@ public class OderServiceImpl implements OrderService {
         Orders orders = new Orders();
         orders.setId(ordersDB.getId());
 
-        if (ordersDB.getStatus().equals(Orders.TO_BE_CONFIRMED)){
+        if (ordersDB.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
             orders.setPayStatus(Orders.REFUND);
         }
 
@@ -263,30 +284,31 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 再来一单
+     *
      * @param id
      */
     @Transactional
     public void repetition(Long id) {
-        List <OrderDetail> orderDetails = orderDetailMapper.getByOrderId(id);
+        List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(id);
         //构造购物车数据
-        List <ShoppingCart> shoppingCartList = orderDetails.stream().map(x ->
-                {
-                    ShoppingCart shoppingCart = new ShoppingCart();
-                    BeanUtils.copyProperties(x, shoppingCart);
-                    shoppingCart.setUserId(BaseContext.getCurrentId());
-                    shoppingCart.setCreateTime(LocalDateTime.now());
-                    return shoppingCart;
-                }).collect(Collectors.toList());
+        List<ShoppingCart> shoppingCartList = orderDetails.stream().map(x ->
+        {
+            ShoppingCart shoppingCart = new ShoppingCart();
+            BeanUtils.copyProperties(x, shoppingCart);
+            shoppingCart.setUserId(BaseContext.getCurrentId());
+            shoppingCart.setCreateTime(LocalDateTime.now());
+            return shoppingCart;
+        }).collect(Collectors.toList());
         for (ShoppingCart shoppingCart : shoppingCartList) {
             //判断购物车商品还是否在售或者存在，如果菜品或套餐已下架，则抛出业务异常
-            if (shoppingCart.getSetmealId() == null){
+            if (shoppingCart.getSetmealId() == null) {
                 Dish dish = dishMapper.getById(shoppingCart.getDishId());
-                if (dish == null || !dish.getStatus().equals(1)){
+                if (dish == null || !dish.getStatus().equals(1)) {
                     throw new OrderBusinessException(MessageConstant.DISH_OFF_SALE);
                 }
-            }else if (shoppingCart.getDishId() == null){
+            } else if (shoppingCart.getDishId() == null) {
                 Setmeal setmeal = setmealMapper.getById(shoppingCart.getSetmealId());
-                if (setmeal == null || !setmeal.getStatus().equals(1)){
+                if (setmeal == null || !setmeal.getStatus().equals(1)) {
                     throw new OrderBusinessException(MessageConstant.SETMEAL_OFF_SALE);
                 }
             }
@@ -297,6 +319,7 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 条件搜索
+     *
      * @param ordersPageQueryDTO
      * @return
      */
@@ -351,6 +374,7 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 统计订单数据
+     *
      * @return
      */
     public OrderStatisticsVO statistics() {
@@ -368,13 +392,14 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 取消订单
+     *
      * @param ordersCancelDTO
      */
     public void cancel(OrdersCancelDTO ordersCancelDTO) {
         Orders orders = orderMapper.getById(ordersCancelDTO.getId());
         Orders order = new Orders();
         //判断订单是否已经支付，如果已经支付则需退款
-        if (orders.getPayStatus() == Orders.PAID){
+        if (orders.getPayStatus() == Orders.PAID) {
             order.setPayStatus(Orders.REFUND);
         }
         order.setId(ordersCancelDTO.getId());
@@ -386,18 +411,19 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 拒单 rejection
+     *
      * @param ordersRejectionDTO
      */
     public void rejection(OrdersRejectionDTO ordersRejectionDTO) {
         Orders orders = orderMapper.getById(ordersRejectionDTO.getId());
         Orders order = new Orders();
         //只有订单状态为待接单时，才可拒单
-        if (orders == null && !orders.getStatus().equals(Orders.TO_BE_CONFIRMED)){
+        if (orders == null && !orders.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
 
         //判断订单是否已经支付，如果已经支付则需退款
-        if (orders.getPayStatus() == Orders.PAID){
+        if (orders.getPayStatus() == Orders.PAID) {
             order.setPayStatus(Orders.REFUND);
         }
         order.setId(ordersRejectionDTO.getId());
@@ -409,6 +435,7 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 确认订单
+     *
      * @param ordersConfirmDTO
      */
     public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
@@ -467,20 +494,21 @@ public class OderServiceImpl implements OrderService {
 
     /**
      * 检查客户的收货地址是否超出配送范围
+     *
      * @param address
      */
     private void checkOutOfRange(String address) {
         Map map = new HashMap();
-        map.put("address",shopAddress);
-        map.put("output","json");
-        map.put("ak",ak);
-        log.info("shopaddress:{}",shopAddress);
-        log.info("ak:{}",ak);
+        map.put("address", shopAddress);
+        map.put("output", "json");
+        map.put("ak", ak);
+        log.info("shopaddress:{}", shopAddress);
+        log.info("ak:{}", ak);
         //获取店铺的经纬度坐标
         String shopCoordinate = HttpClientUtil.doGet("https://api.map.baidu.com/geocoding/v3", map);
 
         JSONObject jsonObject = JSON.parseObject(shopCoordinate);
-        if(!jsonObject.getString("status").equals("0")){
+        if (!jsonObject.getString("status").equals("0")) {
             throw new OrderBusinessException("店铺地址解析失败");
         }
 
@@ -491,12 +519,12 @@ public class OderServiceImpl implements OrderService {
         //店铺经纬度坐标
         String shopLngLat = lat + "," + lng;
 
-        map.put("address",address);
+        map.put("address", address);
         //获取用户收货地址的经纬度坐标
         String userCoordinate = HttpClientUtil.doGet("https://api.map.baidu.com/geocoding/v3", map);
 
         jsonObject = JSON.parseObject(userCoordinate);
-        if(!jsonObject.getString("status").equals("0")){
+        if (!jsonObject.getString("status").equals("0")) {
             throw new OrderBusinessException("收货地址解析失败");
         }
 
@@ -507,15 +535,15 @@ public class OderServiceImpl implements OrderService {
         //用户收货地址经纬度坐标
         String userLngLat = lat + "," + lng;
 
-        map.put("origin",shopLngLat);
-        map.put("destination",userLngLat);
-        map.put("steps_info","0");
+        map.put("origin", shopLngLat);
+        map.put("destination", userLngLat);
+        map.put("steps_info", "0");
 
         //路线规划
         String json = HttpClientUtil.doGet("https://api.map.baidu.com/directionlite/v1/driving", map);
 
         jsonObject = JSON.parseObject(json);
-        if(!jsonObject.getString("status").equals("0")){
+        if (!jsonObject.getString("status").equals("0")) {
             throw new OrderBusinessException("配送路线规划失败");
         }
 
@@ -524,9 +552,28 @@ public class OderServiceImpl implements OrderService {
         JSONArray jsonArray = (JSONArray) result.get("routes");
         Integer distance = (Integer) ((JSONObject) jsonArray.get(0)).get("distance");
 
-        if(distance > 5000){
+        if (distance > 5000) {
             //配送距离超过5000米
             throw new OrderBusinessException("超出配送范围");
         }
+    }
+
+    /**
+     * 订单催单
+     *
+     * @param id
+     */
+    public void reminder(Long id) {
+        //根据id查询订单
+        Orders order = orderMapper.getById(id);
+        if (order == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        Map map = new HashMap();
+        map.put("type", 2);
+        map.put("orderId", order.getId());
+        map.put("content", "订单号：" + order.getNumber());
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
 }
