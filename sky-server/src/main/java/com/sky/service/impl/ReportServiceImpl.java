@@ -1,9 +1,12 @@
 package com.sky.service.impl;
 
+import com.sky.dto.GoodsSalesDTO;
+import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import io.swagger.models.auth.In;
@@ -18,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Arc
@@ -69,7 +73,7 @@ public class ReportServiceImpl implements ReportService {
             Map map = new HashMap();
             map.put("begin", beginTime);
             map.put("end", endTime);
-            map.put("status", 5);
+            map.put("status", Orders.COMPLETED);
             //以map为参数查询当日营业额
             Double turnover = orderMapper.sumByMap(map);
             //判断当日营业额是否为null
@@ -107,7 +111,7 @@ public class ReportServiceImpl implements ReportService {
             orderCount = orderCount == null ? 0 : orderCount;
             orderCountList.add(orderCount);
             //查询当日的有效订单数
-            map.put("status", 5);
+            map.put("status", Orders.COMPLETED);
             Integer validOrder = orderMapper.countByMap(map);
             validOrder = validOrder == null ? 0 : validOrder;
             validOrderList.add(validOrder);
@@ -160,6 +164,33 @@ public class ReportServiceImpl implements ReportService {
                 .dateList(StringUtils.join(dateList, ","))
                 .totalUserList(StringUtils.join(totalUserList, ","))
                 .newUserList(StringUtils.join(newUserList, ","))
+                .build();
+    }
+
+    /**
+     * 销量排名
+     *
+     * @param begin
+     * @param end
+     * @return
+     */
+    public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+        List<LocalDate> dateList = getDateList(begin, end);
+        List<String> nameList = new ArrayList<>();
+        List<Integer> numberList = new ArrayList<>();
+        LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(end, LocalTime.MAX);
+        Map map = new HashMap();
+        map.put("begin", beginTime);
+        map.put("end", endTime);
+        map.put("status", Orders.COMPLETED);
+        List<GoodsSalesDTO> goodsSalesDTOS = orderMapper.getSaleTop(map);
+        nameList = goodsSalesDTOS.stream().map(GoodsSalesDTO::getName).collect(Collectors.toList());
+        numberList = goodsSalesDTOS.stream().map(GoodsSalesDTO::getNumber).collect(Collectors.toList());
+
+        return SalesTop10ReportVO.builder()
+                .nameList(StringUtils.join(nameList, ","))
+                .numberList(StringUtils.join(numberList, ","))
                 .build();
     }
 }

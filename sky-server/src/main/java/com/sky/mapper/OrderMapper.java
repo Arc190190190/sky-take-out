@@ -2,6 +2,7 @@ package com.sky.mapper;
 
 import cn.hutool.db.sql.Order;
 import com.github.pagehelper.Page;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.dto.OrdersDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
@@ -108,4 +109,11 @@ public interface OrderMapper {
      * @return
      */
     Integer countByMap(Map map);
+
+    /**
+     * 查询销量排名top10
+     * @param map
+     * @return
+     */
+    List<GoodsSalesDTO> getSaleTop(Map map);
 }
