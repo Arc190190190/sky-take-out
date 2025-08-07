@@ -1,5 +1,6 @@
 package com.sky.controller.admin;
 
+import com.aliyuncs.http.HttpResponse;
 import com.sky.result.Result;
 import com.sky.service.ReportService;
 import com.sky.vo.OrderReportVO;
@@ -12,9 +13,11 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
 
 /**
@@ -85,5 +88,16 @@ public class ReportController {
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end){
         log.info("销量排名");
         return Result.success(reportService.getSalesTop10(begin,end));
+    }
+
+    /**
+     * 数据报表导出
+     * @return
+     */
+    @GetMapping("/export")
+    @ApiOperation("导出报表数据")
+    public void export(HttpServletResponse response){
+        log.info("导出报表数据");
+        reportService.exportBusinessData(response);
     }
 }

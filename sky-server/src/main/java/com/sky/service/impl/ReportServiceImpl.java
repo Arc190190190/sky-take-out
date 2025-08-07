@@ -1,19 +1,23 @@
 package com.sky.service.impl;
 
+import com.aliyuncs.http.HttpResponse;
 import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
-import com.sky.vo.OrderReportVO;
-import com.sky.vo.SalesTop10ReportVO;
-import com.sky.vo.TurnoverReportVO;
-import com.sky.vo.UserReportVO;
+import com.sky.vo.*;
 import io.swagger.models.auth.In;
 import org.apache.commons.lang.StringUtils;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -192,5 +196,88 @@ public class ReportServiceImpl implements ReportService {
                 .nameList(StringUtils.join(nameList, ","))
                 .numberList(StringUtils.join(numberList, ","))
                 .build();
+    }
+
+
+
+    /**
+     * 导出报表数据
+     * @param response
+     */
+    public void exportBusinessData(HttpServletResponse response) {
+        //获取营业数据
+        /**
+         * 营业额：当日已完成订单的总金额
+         * 有效订单：当日已完成订单的数量
+         * 订单完成率：有效订单数 / 总订单数
+         * 平均客单价：营业额 / 有效订单数
+         * 新增用户：当日新增用户的数量
+         */
+        LocalDate beginDate = LocalDate.now().plusDays(-30);
+        LocalDate endDate = LocalDate.now().plusDays(-1);
+        LocalDateTime begin = LocalDateTime.of(beginDate, LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.of(endDate, LocalTime.MAX);
+
+        Map map = new HashMap();
+        map.put("begin",begin);
+        map.put("end",end);
+
+        //查询总订单数
+        Integer totalOrderCount = orderMapper.countByMap(map);
+
+        map.put("status", Orders.COMPLETED);
+        //营业额
+        Double turnover = orderMapper.sumByMap(map);
+        turnover = turnover == null? 0.0 : turnover;
+
+        //有效订单数
+        Integer validOrderCount = orderMapper.countByMap(map);
+
+        Double unitPrice = 0.0;
+
+        Double orderCompletionRate = 0.0;
+        if(totalOrderCount != 0 && validOrderCount != 0){
+            //订单完成率
+            orderCompletionRate = validOrderCount.doubleValue() / totalOrderCount;
+            //平均客单价
+            unitPrice = turnover / validOrderCount;
+        }
+
+        //新增用户数
+        Integer newUsers = userMapper.countByMap(map);
+
+        BusinessDataVO businessDataVO = BusinessDataVO.builder()
+                .turnover(turnover)
+                .validOrderCount(validOrderCount)
+                .orderCompletionRate(orderCompletionRate)
+                .unitPrice(unitPrice)
+                .newUsers(newUsers)
+                .build();
+
+        //通过poi将数据写入到Excel模板文件中
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("template/运营数据报表模板.xlsx");
+
+        try {
+            XSSFWorkbook excel = new XSSFWorkbook(inputStream);
+            XSSFSheet sheet = excel.getSheet("Sheet1");
+            //填充数据
+            sheet.getRow(1).getCell(1).setCellValue("时间：" + begin + "~" + end);
+            sheet.getRow(3).getCell(2).setCellValue(businessDataVO.getTurnover());
+            sheet.getRow(3).getCell(4).setCellValue(businessDataVO.getOrderCompletionRate());
+            sheet.getRow(3).getCell(6).setCellValue(businessDataVO.getNewUsers());
+            sheet.getRow(4).getCell(2).setCellValue(businessDataVO.getValidOrderCount());
+            sheet.getRow(4).getCell(4).setCellValue(businessDataVO.getUnitPrice());
+
+            ServletOutputStream outputStream = response.getOutputStream();
+            excel.write(outputStream);
+            excel.close();
+            outputStream.close();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
     }
 }
